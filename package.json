@@ -1,0 +1,6 @@
+{
+  "devDependencies": {
+    "sharp": "^0.35.4",
+    "tailwindcss": "^3.4.19"
+  }
+}

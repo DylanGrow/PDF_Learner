@@ -1,0 +1,147 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Screen transitions ────────────────────────────────────────────────────── */
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(32px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-32px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+@keyframes popIn {
+  0%   { opacity: 0; transform: scale(0.92); }
+  60%  { opacity: 1; transform: scale(1.02); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+/* ── Timer ring (SVG circle countdown) ─────────────────────────────────────── */
+@keyframes timerUrgentPulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.55; }
+}
+
+/* ── Confetti particles ─────────────────────────────────────────────────────── */
+@keyframes confettiFall {
+  0%   { transform: translateY(-10px) rotate(0deg);   opacity: 1; }
+  100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+}
+
+/* ── Score count-up ring ────────────────────────────────────────────────────── */
+@keyframes ringFill {
+  from { stroke-dashoffset: 339.3; }
+}
+
+/* ── Option button reveal ───────────────────────────────────────────────────── */
+@keyframes optionReveal {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Streak counter pulse ───────────────────────────────────────────────────── */
+@keyframes streakPulse {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+
+/* ── Gradient background animation ──────────────────────────────────────────── */
+@keyframes gradientShift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@layer utilities {
+  .animate-slide-right  { animation: slideInRight  0.3s cubic-bezier(0.16,1,0.3,1) forwards; }
+  .animate-slide-left   { animation: slideInLeft   0.3s cubic-bezier(0.16,1,0.3,1) forwards; }
+  .animate-fade-in      { animation: fadeIn        0.3s cubic-bezier(0.16,1,0.3,1) forwards; }
+  .animate-pop-in       { animation: popIn         0.35s cubic-bezier(0.16,1,0.3,1) forwards; }
+  .animate-ring-fill    { animation: ringFill      1.2s cubic-bezier(0.16,1,0.3,1) forwards; }
+  .animate-streak-pulse { animation: streakPulse   0.4s ease-out; }
+  .animate-timer-urgent { animation: timerUrgentPulse 0.6s ease-in-out infinite; }
+
+  /* Staggered option animation delays */
+  .option-delay-0 { animation: optionReveal 0.22s 0.00s cubic-bezier(0.16,1,0.3,1) both; }
+  .option-delay-1 { animation: optionReveal 0.22s 0.06s cubic-bezier(0.16,1,0.3,1) both; }
+  .option-delay-2 { animation: optionReveal 0.22s 0.12s cubic-bezier(0.16,1,0.3,1) both; }
+  .option-delay-3 { animation: optionReveal 0.22s 0.18s cubic-bezier(0.16,1,0.3,1) both; }
+
+  /* Animated gradient background */
+  .animated-gradient {
+    background: linear-gradient(135deg, #eff6ff, #eef2ff, #f5f3ff, #eff6ff);
+    background-size: 300% 300%;
+    animation: gradientShift 12s ease infinite;
+  }
+  .dark .animated-gradient,
+  .animated-gradient-dark {
+    background: linear-gradient(135deg, #0f172a, #1e1b4b, #0c1a3a, #0f172a);
+    background-size: 300% 300%;
+    animation: gradientShift 12s ease infinite;
+  }
+
+  /* Visually hidden */
+  .sr-only {
+    position: absolute;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+  .focus\:not-sr-only:focus {
+    position: fixed;
+    width: auto; height: auto;
+    padding: 0.5rem 1rem;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+  }
+
+  /* 3D Flashcard Flip */
+  .perspective-1000 { perspective: 1000px; }
+  .transform-style-3d { transform-style: preserve-3d; }
+  .backface-hidden { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+  .rotate-y-180 { transform: rotateY(180deg); }
+  .card-flip-transition { transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+
+  /* Print Stylesheet */
+  @media print {
+    body {
+      background: white !important;
+      color: black !important;
+      padding: 0 !important;
+    }
+    .no-print, #theme-toggle, #sound-toggle, #shortcut-help-btn, #install-banner,
+    #confetti-canvas, #shortcut-modal, #main-content {
+      display: none !important;
+    }
+    #printable-worksheet {
+      display: block !important;
+      position: static !important;
+      width: 100% !important;
+      margin: 0 !important;
+      padding: 1.5cm !important;
+      background: white !important;
+      color: black !important;
+      box-shadow: none !important;
+      border: none !important;
+    }
+    .page-break-before {
+      break-before: page !important;
+      page-break-before: always !important;
+    }
+  }
+}

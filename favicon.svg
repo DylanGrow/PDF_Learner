@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="g" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1d4ed8;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#4f46e5;stop-opacity:1"/>
+    </linearGradient>
+    <clipPath id="clip">
+      <rect width="100" height="100" rx="22" ry="22"/>
+    </clipPath>
+  </defs>
+  <!-- Rounded square background -->
+  <rect width="100" height="100" rx="22" ry="22" fill="url(#g)"/>
+  <!-- Document / page icon -->
+  <g clip-path="url(#clip)" fill="none" stroke="white" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Page outline -->
+    <path d="M32 20 L32 80 Q32 84 36 84 L64 84 Q68 84 68 80 L68 38 L54 20 Z"/>
+    <!-- Folded corner -->
+    <path d="M54 20 L54 38 L68 38"/>
+    <!-- Text lines -->
+    <line x1="40" y1="52" x2="60" y2="52"/>
+    <line x1="40" y1="62" x2="60" y2="62"/>
+    <line x1="40" y1="72" x2="52" y2="72"/>
+    <!-- Quiz checkmark (small tick inside a circle at bottom-right) -->
+  </g>
+  <!-- Quiz "Q" badge overlay at bottom-right -->
+  <circle cx="72" cy="72" r="18" fill="#10b981"/>
+  <text x="72" y="79" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="700" font-size="18" fill="white">Q</text>
+</svg>

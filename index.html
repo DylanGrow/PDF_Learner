@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- ── Security ──────────────────────────────────────────────────────────── -->
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'none';
+    script-src 'self' 'unsafe-eval' 'wasm-unsafe-eval' https://cdn.jsdelivr.net;
+    style-src 'self';
+    worker-src 'self' blob:;
+    child-src 'self' blob:;
+    img-src 'self' data:;
+    font-src 'self';
+    connect-src 'self' https://huggingface.co https://*.huggingface.co https://hf.co https://*.hf.co https://cdn.jsdelivr.net https://*.jsdelivr.net https://api-inference.huggingface.co;
+    object-src 'none';
+    base-uri 'none';
+    form-action 'none';
+    frame-ancestors 'none';
+    upgrade-insecure-requests
+  ">
+  <meta http-equiv="Permissions-Policy"
+    content="camera=(), microphone=(), geolocation=(), payment=(), usb=(), bluetooth=()">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+
+  <!-- ── SEO ───────────────────────────────────────────────────────────────── -->
+  <title>PDF Quiz Maker — Test Yourself on Any PDF</title>
+  <meta name="description" content="Turn any text-based PDF into a multiple-choice quiz instantly. Entirely in your browser — no uploads, no account, no server. 100% private.">
+  <meta name="robots" content="index, follow">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#1d4ed8" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1e3a8a" media="(prefers-color-scheme: dark)">
+  <link rel="canonical" href="https://your-github-username.github.io/pdf-quiz-maker/">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="PDF Quiz Maker — Test Yourself on Any PDF">
+  <meta property="og:description" content="Turn any text-based PDF into a multiple-choice quiz. 100% private — runs in your browser.">
+  <meta property="og:url" content="https://your-github-username.github.io/pdf-quiz-maker/">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="PDF Quiz Maker">
+  <meta name="twitter:description" content="Turn any text-based PDF into a multiple-choice quiz. Runs in your browser — no uploads.">
+
+  <!-- ── Favicon & PWA ─────────────────────────────────────────────────────── -->
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="icon" type="image/png" sizes="192x192" href="favicon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="favicon-512.png">
+  <link rel="apple-touch-icon" href="favicon-192.png">
+  <link rel="manifest" href="manifest.webmanifest">
+
+  <!-- ── Styles ────────────────────────────────────────────────────────────── -->
+  <link rel="stylesheet" href="tailwind.css">
+</head>
+
+<body class="animated-gradient dark:animated-gradient-dark min-h-screen flex flex-col items-center justify-center p-4 font-sans antialiased transition-colors duration-500">
+
+  <!-- Confetti canvas overlay -->
+  <canvas id="confetti-canvas" class="fixed inset-0 pointer-events-none z-50" aria-hidden="true"></canvas>
+
+  <!-- Keyboard shortcut modal -->
+  <div id="shortcut-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="shortcut-title">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" id="shortcut-backdrop"></div>
+    <div class="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl ring-1 ring-gray-200 dark:ring-gray-700 p-6 w-full max-w-sm animate-pop-in">
+      <h2 id="shortcut-title" class="text-base font-bold text-gray-900 dark:text-white mb-4">⌨️ Keyboard Shortcuts</h2>
+      <dl class="space-y-2.5 text-sm">
+        <div class="flex items-center justify-between"><dt class="text-gray-500 dark:text-gray-400">Answer option</dt><dd class="flex gap-1"><kbd class="px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 font-mono text-xs text-gray-600 dark:text-gray-300">A</kbd><kbd class="px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 font-mono text-xs text-gray-600 dark:text-gray-300">B</kbd><kbd class="px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 font-mono text-xs text-gray-600 dark:text-gray-300">C</kbd><kbd class="px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 font-mono text-xs text-gray-600 dark:text-gray-300">D</kbd></dd></div>
+        <div class="flex items-center justify-between"><dt class="text-gray-500 dark:text-gray-400">True / False</dt><dd class="flex gap-1"><kbd class="px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 font-mono text-xs text-gray-600 dark:text-gray-300">T</kbd><kbd class="px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 font-mono text-xs text-gray-600 dark:text-gray-300">F</kbd></dd></div>
+        <div class="flex items-center justify-between"><dt class="text-gray-500 dark:text-gray-400">Flip flashcard</dt><dd><kbd class="px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 font-mono text-xs text-gray-600 dark:text-gray-300">Space</kbd></dd></div>
+        <div class="flex items-center justify-between"><dt class="text-gray-500 dark:text-gray-400">Rate flashcard</dt><dd class="flex gap-1"><kbd class="px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 font-mono text-xs text-gray-600 dark:text-gray-300">1</kbd><kbd class="px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 font-mono text-xs text-gray-600 dark:text-gray-300">2</kbd></dd></div>
+        <div class="flex items-center justify-between"><dt class="text-gray-500 dark:text-gray-400">Bookmark question</dt><dd class="flex gap-1"><kbd class="px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 font-mono text-xs text-gray-600 dark:text-gray-300">S</kbd><kbd class="px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 font-mono text-xs text-gray-600 dark:text-gray-300">B</kbd></dd></div>
+        <div class="flex items-center justify-between"><dt class="text-gray-500 dark:text-gray-400">Read aloud (TTS)</dt><dd><kbd class="px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 font-mono text-xs text-gray-600 dark:text-gray-300">R</kbd></dd></div>
+        <div class="flex items-center justify-between"><dt class="text-gray-500 dark:text-gray-400">Next question</dt><dd><kbd class="px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 font-mono text-xs text-gray-600 dark:text-gray-300">Enter</kbd></dd></div>
+        <div class="flex items-center justify-between"><dt class="text-gray-500 dark:text-gray-400">Toggle dark mode</dt><dd><kbd class="px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 font-mono text-xs text-gray-600 dark:text-gray-300">M</kbd></dd></div>
+        <div class="flex items-center justify-between"><dt class="text-gray-500 dark:text-gray-400">Show this help</dt><dd><kbd class="px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 font-mono text-xs text-gray-600 dark:text-gray-300">?</kbd></dd></div>
+        <div class="flex items-center justify-between"><dt class="text-gray-500 dark:text-gray-400">Close</dt><dd><kbd class="px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 font-mono text-xs text-gray-600 dark:text-gray-300">Esc</kbd></dd></div>
+      </dl>
+      <button id="close-shortcut-modal" class="mt-5 w-full rounded-xl bg-gray-100 dark:bg-gray-800 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors" type="button">Close</button>
+    </div>
+  </div>
+
+  <!-- PWA install banner -->
+  <div id="install-banner" class="hidden fixed bottom-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 bg-white dark:bg-gray-800 rounded-2xl shadow-xl ring-1 ring-gray-200 dark:ring-gray-700 px-4 py-3 max-w-sm w-[calc(100%-2rem)]">
+    <div class="flex items-center justify-center w-9 h-9 rounded-xl bg-blue-600 shrink-0">
+      <svg class="w-5 h-5 text-white" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10.75 2.75a.75.75 0 0 0-1.5 0v8.614L6.295 8.235a.75.75 0 1 0-1.09 1.03l4.25 4.5a.75.75 0 0 0 1.09 0l4.25-4.5a.75.75 0 0 0-1.09-1.03l-2.955 3.129V2.75z"/><path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5z"/></svg>
+    </div>
+    <div class="flex-1 min-w-0">
+      <p class="text-sm font-semibold text-gray-900 dark:text-white">Install App</p>
+      <p class="text-xs text-gray-500 dark:text-gray-400 truncate">Add to your home screen for offline use</p>
+    </div>
+    <button id="install-btn" class="shrink-0 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors" type="button">Install</button>
+    <button id="dismiss-install-btn" class="shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 focus:outline-none" aria-label="Dismiss" type="button">
+      <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M6.28 5.22a.75.75 0 0 0-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 1 0 1.06 1.06L10 11.06l3.72 3.72a.75.75 0 1 0 1.06-1.06L11.06 10l3.72-3.72a.75.75 0 0 0-1.06-1.06L10 8.94 6.28 5.22z"/></svg>
+    </button>
+  </div>
+
+  <!-- Sound toggle (fixed) -->
+  <button id="sound-toggle"
+          class="fixed top-4 right-28 z-40 flex items-center justify-center w-9 h-9 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-md border border-white/50 dark:border-gray-700/50 text-gray-600 dark:text-gray-300 hover:scale-110 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200"
+          aria-label="Toggle sound effects" type="button" title="Toggle audio (Mute/Unmute)">
+    <svg id="icon-sound-on" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+      <path d="M10 3.75a.75.75 0 0 0-1.264-.546L4.703 7H2.5A1.5 1.5 0 0 0 1 8.5v3A1.5 1.5 0 0 0 2.5 13h2.203l4.033 3.796A.75.75 0 0 0 10 16.25V3.75zM14.95 6.05a.75.75 0 0 1 1.06 0 7 7 0 0 1 0 9.9.75.75 0 1 1-1.06-1.06 5.5 5.5 0 0 0 0-7.78.75.75 0 0 1 0-1.06z"/>
+      <path d="M13.25 8.25a.75.75 0 0 1 1.06 0 3.5 3.5 0 0 1 0 4.95.75.75 0 1 1-1.06-1.06 2 2 0 0 0 0-2.83.75.75 0 0 1 0-1.06z"/>
+    </svg>
+    <svg id="icon-sound-off" xmlns="http://www.w3.org/2000/svg" class="hidden w-4 h-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+      <path d="M10 3.75a.75.75 0 0 0-1.264-.546L4.703 7H2.5A1.5 1.5 0 0 0 1 8.5v3A1.5 1.5 0 0 0 2.5 13h2.203l4.033 3.796A.75.75 0 0 0 10 16.25V3.75zM13.28 7.22a.75.75 0 0 0-1.06 1.06L13.94 10l-1.72 1.72a.75.75 0 1 0 1.06 1.06L15 11.06l1.72 1.72a.75.75 0 1 0 1.06-1.06L16.06 10l1.72-1.72a.75.75 0 0 0-1.06-1.06L15 8.94l-1.72-1.72z"/>
+    </svg>
+  </button>
+
+  <!-- Help button (fixed) -->
+  <button id="shortcut-help-btn"
+          class="fixed top-4 right-16 z-40 flex items-center justify-center w-9 h-9 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-md border border-white/50 dark:border-gray-700/50 text-gray-500 dark:text-gray-400 hover:scale-110 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200"
+          aria-label="Keyboard shortcuts" type="button">
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0zm-7-4a1 1 0 1 1-2 0 1 1 0 0 1 2 0zM9 9a.75.75 0 0 0 0 1.5h.253a.25.25 0 0 1 .244.304l-.459 2.066A1.75 1.75 0 0 0 10.747 15H11a.75.75 0 0 0 0-1.5h-.253a.25.25 0 0 1-.244-.304l.459-2.066A1.75 1.75 0 0 0 9.253 9H9z" clip-rule="evenodd"/></svg>
+  </button>
+
+  <!-- Skip link -->
+  <a href="#main-content" class="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-blue-700 focus:text-white focus:rounded-lg focus:shadow-lg focus:outline-none">Skip to main content</a>
+
+  <!-- Dark mode toggle -->
+  <button id="theme-toggle"
+          class="fixed top-4 right-4 z-40 flex items-center justify-center w-9 h-9 rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-md border border-white/50 dark:border-gray-700/50 text-gray-600 dark:text-gray-300 hover:scale-110 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-200"
+          aria-label="Toggle dark mode"
+          type="button">
+    <svg id="icon-sun" xmlns="http://www.w3.org/2000/svg" class="hidden w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+      <path fill-rule="evenodd" d="M10 2a1 1 0 0 1 1 1v1a1 1 0 1 1-2 0V3a1 1 0 0 1 1-1zm4 8a4 4 0 1 1-8 0 4 4 0 0 1 8 0zm-.464 4.95.707.707a1 1 0 0 0 1.414-1.414l-.707-.707a1 1 0 0 0-1.414 1.414zm2.12-10.607a1 1 0 0 1 0 1.414l-.706.707a1 1 0 1 1-1.414-1.414l.707-.707a1 1 0 0 1 1.414 0zM17 11a1 1 0 1 0 0-2h-1a1 1 0 1 0 0 2h1zm-7 4a1 1 0 0 1 1 1v1a1 1 0 1 1-2 0v-1a1 1 0 0 1 1-1zM5.05 6.464A1 1 0 1 0 6.465 5.05l-.708-.707a1 1 0 0 0-1.414 1.414l.707.707zm1.414 8.486-.707.707a1 1 0 0 1-1.414-1.414l.707-.707a1 1 0 0 1 1.414 1.414zM4 11a1 1 0 1 0 0-2H3a1 1 0 1 0 0 2h1z" clip-rule="evenodd"/>
+    </svg>
+    <svg id="icon-moon" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+      <path d="M17.293 13.293A8 8 0 0 1 6.707 2.707a8.001 8.001 0 1 0 10.586 10.586z"/>
+    </svg>
+  </button>
+
+  <main id="main-content" class="w-full max-w-lg" aria-label="PDF Quiz Maker">
+
+    <!-- ════════════════════════════════════════════════════════════════════════
+         UPLOAD SCREEN
+    ════════════════════════════════════════════════════════════════════════ -->
+    <section id="upload-screen"
+             aria-labelledby="app-heading"
+             class="bg-white/90 dark:bg-gray-900/90 backdrop-blur-md rounded-3xl shadow-2xl ring-1 ring-white/60 dark:ring-white/10 p-8 transition-colors duration-300">
+
+      <!-- Header -->
+      <header class="text-center mb-7">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/30 mb-4" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-9 h-9 text-white" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 1.5L18.5 9H13V3.5zM6 20V4h5v7h7v9H6z"/>
+            <rect x="8" y="13" width="8" height="1.5" rx=".75"/>
+            <rect x="8" y="16" width="5" height="1.5" rx=".75"/>
+          </svg>
+        </div>
+        <h1 id="app-heading" class="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">PDF Quiz Maker</h1>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Turn any PDF into an instant quiz — 100% in your browser</p>
+
+        <!-- Feature pills -->
+        <div class="flex flex-wrap items-center justify-center gap-2 mt-4" aria-hidden="true">
+          <span class="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 ring-1 ring-green-200 dark:ring-green-800">
+            <svg class="w-3 h-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 1a4.5 4.5 0 0 0-4.5 4.5V9H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-.5V5.5A4.5 4.5 0 0 0 10 1zm3 8V5.5a3 3 0 1 0-6 0V9h6z" clip-rule="evenodd"/></svg>
+            100% Private
+          </span>
+          <span class="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 ring-1 ring-blue-200 dark:ring-blue-800">
+            <svg class="w-3 h-3" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M13.5 4.938a7 7 0 1 1-9.006 1.737c.202-.. 0-.3-.2-.49L13.5 4.938zM10 2a8 8 0 1 0 4.7 14.528l.347.943a9 9 0 1 1-4.977-16.44L10 2z" clip-rule="evenodd"/><path d="M15.95 10.435 10.5 7.207V2.5a.5.5 0 0 1 1 0v4.293l5.45 3.228a.5.5 0 1 1-.5.414z"/></svg>
+            Instant
+          </span>
+          <span class="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 ring-1 ring-purple-200 dark:ring-purple-800">
+            <svg class="w-3 h-3" viewBox="0 0 20 20" fill="currentColor"><path d="M11 17a1 1 0 0 0 1.447.894l4-2A1 1 0 0 0 17 15V9.236a1 1 0 0 0-1.447-.894l-4 2a1 1 0 0 0-.553.894V17zM15.211 6.276a1 1 0 0 0 0-1.788l-4.764-2.382a1 1 0 0 0-.894 0L4.789 4.488a1 1 0 0 0 0 1.788l4.764 2.382a1 1 0 0 0 .894 0l4.764-2.382zM4.447 8.342A1 1 0 0 0 3 9.236V15a1 1 0 0 0 .553.894l4 2A1 1 0 0 0 9 17v-5.764a1 1 0 0 0-.553-.894l-4-2z"/></svg>
+            Works Offline
+          </span>
+          <span class="inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-full bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 ring-1 ring-orange-200 dark:ring-orange-800">
+            <svg class="w-3 h-3" viewBox="0 0 20 20" fill="currentColor"><path d="M3 4a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4zm0 6a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-2zm1 5a1 1 0 1 0 0 2h6a1 1 0 1 0 0-2H4z"/></svg>
+            No Upload
+          </span>
+        </div>
+      </header>
+
+      <p class="sr-only" id="privacy-note">Your PDF is processed entirely on your device. Nothing is ever uploaded to a server.</p>
+
+      <!-- Drop zone -->
+      <div id="drop-zone"
+           class="group relative flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700 bg-gradient-to-b from-gray-50 to-white dark:from-gray-800/60 dark:to-gray-800/30 px-6 py-12 text-center cursor-pointer
+                  hover:border-blue-400 dark:hover:border-blue-500 hover:from-blue-50/70 hover:to-white dark:hover:from-blue-900/20 dark:hover:to-gray-800/30
+                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2
+                  transition-all duration-200"
+           role="button" tabindex="0"
+           aria-describedby="privacy-note drop-zone-hint"
+           aria-label="Choose or drop a PDF file">
+
+        <!-- Upload icon with subtle ring animation on hover -->
+        <div class="flex items-center justify-center w-14 h-14 rounded-2xl bg-blue-100 dark:bg-blue-900/40 group-hover:bg-blue-200 dark:group-hover:bg-blue-900/60 transition-colors duration-200" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-blue-500 dark:text-blue-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5"/>
+          </svg>
+        </div>
+
+        <div>
+          <p class="text-sm font-semibold text-gray-700 dark:text-gray-200" id="drop-zone-hint">
+            Drag &amp; drop your PDF here
+          </p>
+          <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">
+            or <span class="text-blue-500 dark:text-blue-400 underline underline-offset-2">click to browse</span> — max 10 MB, up to 50 pages
+          </p>
+        </div>
+      </div>
+      <input type="file" id="file-input" accept="application/pdf,.pdf" class="sr-only" aria-hidden="true" tabindex="-1">
+
+      <!-- File info chip -->
+      <div id="file-info"
+           class="hidden mt-3 flex items-center gap-2.5 rounded-xl bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-800 px-4 py-2.5 text-sm"
+           role="status" aria-live="polite">
+        <div class="flex items-center justify-center w-6 h-6 rounded-full bg-green-500 shrink-0">
+          <svg class="w-3.5 h-3.5 text-white" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M16.704 4.153a.75.75 0 0 1 .143 1.052l-8 10.5a.75.75 0 0 1-1.127.075l-4.5-4.5a.75.75 0 0 1 1.06-1.06l3.894 3.893 7.48-9.817a.75.75 0 0 1 1.05-.143z" clip-rule="evenodd"/>
+          </svg>
+        </div>
+        <span id="file-info-text" class="text-green-800 dark:text-green-300 font-medium truncate"></span>
+      </div>
+
+      <!-- Settings grid -->
+      <div class="mt-5 grid grid-cols-2 gap-3">
+        <div>
+          <label for="num-questions" class="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Questions</label>
+          <select id="num-questions"
+                  class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2.5 text-sm font-medium text-gray-900 dark:text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors">
+            <option value="5">5 questions</option>
+            <option value="10" selected>10 questions</option>
+            <option value="15">15 questions</option>
+            <option value="20">20 questions</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="difficulty" class="block text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Difficulty</label>
+          <select id="difficulty"
+                  class="w-full rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2.5 text-sm font-medium text-gray-900 dark:text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors">
+            <option value="easy">🟢 Easy</option>
+            <option value="medium" selected>🟡 Medium</option>
+            <option value="hard">🔴 Hard</option>
+          </select>
+        </div>
+
+        <!-- Mode selector: Quiz vs Study vs Flashcards -->
+        <div class="col-span-2" role="group" aria-label="Quiz mode">
+          <p class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">Mode</p>
+          <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-1 flex gap-1">
+            <button id="mode-quiz" type="button" aria-pressed="true"
+                    class="flex-1 flex items-center justify-center gap-1 rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all duration-150 bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5z" clip-rule="evenodd"/></svg>
+              Quiz
+            </button>
+            <button id="mode-study" type="button" aria-pressed="false"
+                    class="flex-1 flex items-center justify-center gap-1 rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all duration-150 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M9 4.804A7.968 7.968 0 0 0 5.188 4c-1.815 0-3.489.463-4.938 1.274-.509.286-.75.899-.75 1.476V13.5c0 1.024 1.12 1.623 1.942 1.057a7.97 7.97 0 0 1 3.746-.957c1.272 0 2.472.32 3.512.876V4.804zM11 4.804V15.48a7.97 7.97 0 0 1 3.512-.876c1.353 0 2.624.345 3.746.957.822.566 1.942-.033 1.942-1.057V6.75c0-.577-.241-1.19-.75-1.476A7.968 7.968 0 0 0 14.812 4 7.968 7.968 0 0 0 11 4.804z"/></svg>
+              Study
+            </button>
+            <button id="mode-flashcard" type="button" aria-pressed="false"
+                    class="flex-1 flex items-center justify-center gap-1 rounded-lg py-2 text-xs sm:text-sm font-semibold transition-all duration-150 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M2 4.75A2.75 2.75 0 0 1 4.75 2h10.5A2.75 2.75 0 0 1 18 4.75v10.5A2.75 2.75 0 0 1 15.25 18H4.75A2.75 2.75 0 0 1 2 15.25V4.75zm10.75 1.5a.75.75 0 0 0-1.06 1.06l2.47 2.47H6.75a.75.75 0 0 0 0 1.5h7.41l-2.47 2.47a.75.75 0 1 0 1.06 1.06l3.75-3.75a.75.75 0 0 0 0-1.06l-3.75-3.75z"/></svg>
+              Flashcards
+            </button>
+          </div>
+        </div>
+
+        <!-- AI Engine selector (Heuristic vs In-Browser AI) -->
+        <div class="col-span-2" role="group" aria-label="Generation engine">
+          <div class="flex items-center justify-between mb-1.5">
+            <p class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Engine</p>
+            <span id="ai-status-pill" class="text-[11px] font-medium text-purple-600 dark:text-purple-400 cursor-help" title="Click 🤖 Transformers.js AI to load the in-browser model">⚡ Heuristic</span>
+          </div>
+          <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-1 flex gap-1">
+            <button id="engine-fast" type="button" aria-pressed="true"
+                    class="flex-1 flex items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-semibold transition-all duration-150 bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm">
+              <span>⚡</span> Fast (Offline)
+            </button>
+            <button id="engine-ai" type="button" aria-pressed="false"
+                    class="flex-1 flex items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-semibold transition-all duration-150 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">
+              <span>🤖</span> AI Questions (free)
+            </button>
+          </div>
+          <p class="mt-1.5 text-[11px] text-gray-400 dark:text-gray-500">
+            Uses the free <strong>Hugging Face Inference API</strong> (flan-t5-base) to write unique, naturally-worded questions based on your document. Requires internet.
+          </p>
+        </div>
+
+        <!-- Timer duration (hidden in study mode) -->
+        <div class="col-span-2" id="timer-row" role="group" aria-label="Timer per question">
+          <p class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">⏱ Timer per question</p>
+          <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-1 flex gap-1">
+            <button data-timer="0"  type="button" aria-pressed="true"  class="timer-seg flex-1 rounded-lg py-1.5 text-xs font-semibold transition-all duration-150 bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm">Off</button>
+            <button data-timer="15" type="button" aria-pressed="false" class="timer-seg flex-1 rounded-lg py-1.5 text-xs font-semibold transition-all duration-150 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">15s</button>
+            <button data-timer="30" type="button" aria-pressed="false" class="timer-seg flex-1 rounded-lg py-1.5 text-xs font-semibold transition-all duration-150 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">30s</button>
+            <button data-timer="60" type="button" aria-pressed="false" class="timer-seg flex-1 rounded-lg py-1.5 text-xs font-semibold transition-all duration-150 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">60s</button>
+          </div>
+        </div>
+
+        <!-- Auto-advance delay -->
+        <div class="col-span-2" role="group" aria-label="Auto-advance to next question">
+          <p class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1.5">⚡ Auto-advance</p>
+          <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-1 flex gap-1">
+            <button data-autoadvance="0"    type="button" aria-pressed="true"  class="autoadvance-seg flex-1 rounded-lg py-1.5 text-xs font-semibold transition-all duration-150 bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm">Off</button>
+            <button data-autoadvance="1000" type="button" aria-pressed="false" class="autoadvance-seg flex-1 rounded-lg py-1.5 text-xs font-semibold transition-all duration-150 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">1s</button>
+            <button data-autoadvance="2000" type="button" aria-pressed="false" class="autoadvance-seg flex-1 rounded-lg py-1.5 text-xs font-semibold transition-all duration-150 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">2s</button>
+            <button data-autoadvance="3000" type="button" aria-pressed="false" class="autoadvance-seg flex-1 rounded-lg py-1.5 text-xs font-semibold transition-all duration-150 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200">3s</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Generate button -->
+      <button id="generate-btn"
+              class="mt-4 w-full inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3.5 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition-all duration-200
+                     hover:from-blue-700 hover:to-indigo-700 hover:shadow-blue-500/40 hover:-translate-y-0.5
+                     focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+                     active:translate-y-0
+                     disabled:opacity-40 disabled:cursor-not-allowed disabled:pointer-events-none disabled:shadow-none"
+              type="button" disabled aria-disabled="true">
+        <svg id="generate-icon" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 1 0 0-16 8 8 0 0 0 0 16zm3.857-9.809a.75.75 0 0 0-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 1 0-1.06 1.061l2.5 2.5a.75.75 0 0 0 1.137-.089l4-5.5z" clip-rule="evenodd"/>
+        </svg>
+        <span id="generate-label">Generate Quiz</span>
+      </button>
+
+      <!-- Progress bar -->
+      <div id="progress-bar-wrap" class="hidden mt-5" aria-hidden="true">
+        <div class="flex items-center justify-between mb-1.5">
+          <span id="progress-label-upload" class="text-xs text-gray-400 dark:text-gray-500 font-medium"></span>
+          <span id="progress-pct" class="text-xs text-gray-400 dark:text-gray-500 tabular-nums font-mono"></span>
+        </div>
+        <div class="w-full h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+          <div id="progress-bar" class="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-300 ease-out" style="width:0%"></div>
+        </div>
+      </div>
+
+      <!-- Status -->
+      <div id="status" class="mt-3 min-h-[1.25rem] text-sm text-gray-500 dark:text-gray-400 text-center" role="status" aria-live="polite" aria-atomic="true"></div>
+
+      <!-- Spaced Repetition (Leitner) Dashboard -->
+      <div id="leitner-panel" class="hidden mt-5 pt-5 border-t border-gray-100 dark:border-gray-800">
+        <div class="flex items-center justify-between mb-2.5">
+          <p class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">🧠 Spaced Repetition</p>
+          <span id="leitner-total-count" class="text-xs font-medium text-purple-600 dark:text-purple-400">0 cards saved</span>
+        </div>
+        <div class="grid grid-cols-3 gap-2 mb-3 text-center">
+          <div class="rounded-xl bg-rose-50 dark:bg-rose-900/20 border border-rose-100 dark:border-rose-900/40 p-2">
+            <span class="text-xs text-rose-600 dark:text-rose-400 font-bold block" id="leitner-box1-count">0</span>
+            <span class="text-[10px] text-gray-400">Box 1 · Daily</span>
+          </div>
+          <div class="rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/40 p-2">
+            <span class="text-xs text-amber-600 dark:text-amber-400 font-bold block" id="leitner-box2-count">0</span>
+            <span class="text-[10px] text-gray-400">Box 2 · 3 Days</span>
+          </div>
+          <div class="rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-900/40 p-2">
+            <span class="text-xs text-emerald-600 dark:text-emerald-400 font-bold block" id="leitner-box3-count">0</span>
+            <span class="text-[10px] text-gray-400">Box 3+ · Mastered</span>
+          </div>
+        </div>
+        <button id="study-due-btn" type="button"
+                class="hidden w-full py-2 px-3 rounded-xl bg-purple-50 hover:bg-purple-100 dark:bg-purple-900/30 dark:hover:bg-purple-900/50 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 text-xs font-semibold transition-all flex items-center justify-center gap-1.5 shadow-sm">
+          <span>🧠</span> Review Due Cards (<span id="due-count">0</span>)
+        </button>
+      </div>
+
+      <!-- Quiz History -->
+      <div id="history-panel" class="hidden mt-5 pt-5 border-t border-gray-100 dark:border-gray-800">
+        <div class="flex items-center justify-between mb-3">
+          <p class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Recent Quizzes</p>
+          <button id="clear-history-btn" class="text-xs text-red-400 hover:text-red-600 dark:hover:text-red-300 focus:outline-none focus:ring-1 focus:ring-red-400 rounded px-1 transition-colors" type="button">Clear all</button>
+        </div>
+        <div id="history-list" class="space-y-2" role="list"></div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════════════════════════════════
+         QUESTION SCREEN
+    ════════════════════════════════════════════════════════════════════════ -->
+    <section id="question-screen"
+             class="hidden bg-white/90 dark:bg-gray-900/90 backdrop-blur-md rounded-3xl shadow-2xl ring-1 ring-white/60 dark:ring-white/10 p-8 transition-colors duration-300"
+             aria-label="Quiz question">
+
+      <!-- Top bar -->
+      <div class="flex items-center gap-3 mb-6">
+
+        <!-- Progress pill -->
+        <span id="progress-label"
+              class="shrink-0 text-xs font-bold tabular-nums text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/40 rounded-full px-3 py-1"
+              aria-live="polite" aria-atomic="true">
+        </span>
+
+        <!-- Progress bar -->
+        <div class="flex-1 h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden" aria-hidden="true">
+          <div id="quiz-progress-bar"
+               class="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-500 ease-out"
+               style="width:0%"></div>
+        </div>
+
+        <!-- Streak badge -->
+        <div id="streak-badge"
+             class="hidden shrink-0 flex items-center gap-1 text-xs font-bold text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-900/30 rounded-full px-2.5 py-1"
+             aria-label="Current streak">
+          <span aria-hidden="true">🔥</span>
+          <span id="streak-count">0</span>
+        </div>
+
+        <!-- Study mode badge -->
+        <span id="study-mode-badge" class="hidden shrink-0 text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 ring-1 ring-emerald-200 dark:ring-emerald-800">📖 Study</span>
+
+        <!-- Flashcard mode badge -->
+        <span id="flashcard-mode-badge" class="hidden shrink-0 text-xs font-bold px-2.5 py-1 rounded-full bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 ring-1 ring-purple-200 dark:ring-purple-800">🎴 Flashcard</span>
+
+        <!-- Circular timer -->
+        <div id="timer-display" class="hidden shrink-0 relative w-10 h-10" aria-live="polite" aria-atomic="true" aria-label="Time remaining">
+          <svg class="w-10 h-10 -rotate-90" viewBox="0 0 40 40" aria-hidden="true">
+            <!-- Track ring -->
+            <circle cx="20" cy="20" r="16" fill="none" class="stroke-gray-100 dark:stroke-gray-700" stroke-width="3.5"/>
+            <!-- Countdown ring -->
+            <circle id="timer-ring" cx="20" cy="20" r="16" fill="none" class="stroke-blue-500 transition-all duration-1000 ease-linear" stroke-width="3.5"
+                    stroke-linecap="round"
+                    stroke-dasharray="100.5"
+                    stroke-dashoffset="0"/>
+          </svg>
+          <!-- Number in centre -->
+          <span id="timer-count"
+                class="absolute inset-0 flex items-center justify-center text-xs font-bold tabular-nums text-gray-700 dark:text-gray-200">
+            30
+          </span>
+        </div>
+
+        <!-- Bookmark button -->
+        <button id="bookmark-btn" type="button"
+                class="shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 hover:bg-amber-50 dark:bg-gray-800 dark:hover:bg-amber-900/30 text-gray-400 hover:text-amber-500 dark:text-gray-500 dark:hover:text-amber-400 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                aria-label="Bookmark question (B or S)" aria-pressed="false" title="Bookmark question (B or S)">
+          <svg id="bookmark-icon" class="w-4 h-4 transition-all duration-200" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+          </svg>
+        </button>
+
+        <!-- Read aloud (TTS) button -->
+        <button id="speak-btn" type="button"
+                class="shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 hover:bg-blue-50 dark:bg-gray-800 dark:hover:bg-blue-900/30 text-gray-400 hover:text-blue-600 dark:text-gray-500 dark:hover:text-blue-400 transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                aria-label="Read question aloud (R)" title="Read aloud (R)">
+          <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path d="M10 3.75a.75.75 0 0 0-1.264-.546L4.703 7H2.5A1.5 1.5 0 0 0 1 8.5v3A1.5 1.5 0 0 0 2.5 13h2.203l4.033 3.796A.75.75 0 0 0 10 16.25V3.75zM14.95 6.05a.75.75 0 0 1 1.06 0 7 7 0 0 1 0 9.9.75.75 0 1 1-1.06-1.06 5.5 5.5 0 0 0 0-7.78.75.75 0 0 1 0-1.06z"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Multiple Choice Container (Quiz & Study modes) -->
+      <div id="mc-container">
+        <!-- Question type badge + question -->
+        <div class="mb-5">
+          <div id="question-type-badge" class="hidden mb-2.5"></div>
+          <div id="question-text"
+               class="text-base leading-relaxed text-gray-800 dark:text-gray-100 font-medium whitespace-pre-line">
+          </div>
+        </div>
+
+        <!-- Keyboard hint -->
+        <p id="mc-keyboard-hint" class="mb-4 text-xs text-gray-300 dark:text-gray-600 select-none" aria-hidden="true">
+          <kbd class="px-1 py-0.5 rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 font-mono text-gray-400 dark:text-gray-500">A</kbd>–<kbd class="px-1 py-0.5 rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 font-mono text-gray-400 dark:text-gray-500">D</kbd> to answer &nbsp;·&nbsp;
+          <kbd class="px-1 py-0.5 rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 font-mono text-gray-400 dark:text-gray-500">S</kbd> bookmark &nbsp;·&nbsp;
+          <kbd class="px-1 py-0.5 rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 font-mono text-gray-400 dark:text-gray-500">R</kbd> speak
+        </p>
+
+        <!-- Answer options -->
+        <div id="options" role="group" aria-label="Answer options" class="space-y-2.5"></div>
+
+        <!-- Context sentence reveal (shown after answering) -->
+        <div id="context-reveal" class="hidden mt-4 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800/60 p-3.5">
+          <p class="text-xs font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wide mb-1">📖 Source context</p>
+          <p id="context-text" class="text-sm text-indigo-900 dark:text-indigo-200 leading-relaxed italic"></p>
+        </div>
+      </div>
+
+      <!-- Flashcard Container (Flashcard mode) -->
+      <div id="flashcard-container" class="hidden mb-2">
+        <p class="mb-3 text-xs text-gray-400 dark:text-gray-500 select-none text-center" aria-hidden="true">
+          Press <kbd class="px-1 py-0.5 rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 font-mono text-gray-500 dark:text-gray-400">Space</kbd> to flip &nbsp;·&nbsp;
+          <kbd class="px-1 py-0.5 rounded border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 font-mono text-gray-500 dark:text-gray-400">R</kbd> speak
+        </p>
+
+        <div id="flashcard" class="perspective-1000 w-full min-h-[270px] cursor-pointer select-none" tabindex="0" role="button" aria-label="Flashcard. Press Space or click to flip.">
+          <div id="flashcard-inner" class="relative w-full min-h-[270px] transform-style-3d card-flip-transition rounded-2xl">
+            <!-- Front Face -->
+            <div id="flashcard-front" class="absolute inset-0 backface-hidden rounded-2xl border-2 border-blue-100 dark:border-blue-900/60 bg-gradient-to-b from-blue-50/50 via-white to-blue-50/20 dark:from-gray-800 dark:via-gray-800 dark:to-gray-800/80 p-6 flex flex-col justify-between shadow-md">
+              <div class="flex items-center justify-between text-xs text-blue-600 dark:text-blue-400 font-semibold uppercase tracking-wider">
+                <span class="flex items-center gap-1.5">🎴 Flashcard Front</span>
+                <span id="flashcard-box-badge" class="text-[10px] px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 font-bold">Box 1</span>
+              </div>
+              <div id="flashcard-front-text" class="my-auto py-4 text-base sm:text-lg font-medium text-gray-800 dark:text-gray-100 text-center leading-relaxed whitespace-pre-line"></div>
+              <div class="text-center text-xs text-blue-500/70 dark:text-blue-400/70 font-medium">
+                Tap card or press Space to flip ↷
+              </div>
+            </div>
+
+            <!-- Back Face -->
+            <div id="flashcard-back" class="absolute inset-0 backface-hidden rotate-y-180 rounded-2xl border-2 border-indigo-200 dark:border-indigo-800/80 bg-gradient-to-b from-indigo-50/60 via-white to-purple-50/30 dark:from-gray-800 dark:via-gray-800 dark:to-gray-800/90 p-6 flex flex-col justify-between shadow-md">
+              <div class="flex items-center justify-between text-xs text-indigo-600 dark:text-indigo-400 font-semibold uppercase tracking-wider">
+                <span class="flex items-center gap-1.5">💡 Answer &amp; Context</span>
+                <span class="text-gray-400 dark:text-gray-500 font-normal">Click to flip ↶</span>
+              </div>
+              <div class="my-auto py-2 text-center">
+                <p id="flashcard-back-answer" class="text-xl sm:text-2xl font-bold text-blue-600 dark:text-blue-400 mb-2"></p>
+                <p id="flashcard-back-context" class="text-xs sm:text-sm text-gray-600 dark:text-gray-300 italic leading-relaxed max-h-28 overflow-y-auto px-1"></p>
+              </div>
+              <div class="pt-2 flex items-center gap-2" id="flashcard-rating-buttons">
+                <button id="flashcard-learning-btn" type="button"
+                        class="flex-1 rounded-xl py-2.5 px-3 text-xs font-semibold bg-rose-50 hover:bg-rose-100 dark:bg-rose-900/30 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/80 transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95">
+                  <span class="font-bold">✕</span> Still Learning
+                  <kbd class="hidden sm:inline px-1 py-0.5 rounded bg-rose-100 dark:bg-rose-800/60 text-[10px] text-rose-600 dark:text-rose-200">1</kbd>
+                </button>
+                <button id="flashcard-knew-btn" type="button"
+                        class="flex-1 rounded-xl py-2.5 px-3 text-xs font-semibold bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:hover:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/80 transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95">
+                  <span class="font-bold">✓</span> Knew It
+                  <kbd class="hidden sm:inline px-1 py-0.5 rounded bg-emerald-100 dark:bg-emerald-800/60 text-[10px] text-emerald-600 dark:text-emerald-200">2</kbd>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Next button (also used for auto-advance countdown) -->
+      <div class="relative mt-5">
+        <!-- Countdown ring SVG — drawn on top of button, hidden when not auto-advancing -->
+        <svg id="autoadvance-ring" class="hidden absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 200 48" aria-hidden="true" preserveAspectRatio="none">
+          <rect id="autoadvance-fill" x="0" y="0" width="0" height="48" rx="12" fill="rgba(255,255,255,0.18)"/>
+        </svg>
+        <button id="next-btn"
+                class="hidden w-full inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-500/25 transition-all duration-200
+                       hover:from-blue-700 hover:to-indigo-700 hover:-translate-y-0.5
+                       focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+                       active:translate-y-0"
+                type="button">
+          Next Question
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path fill-rule="evenodd" d="M3 10a.75.75 0 0 1 .75-.75h10.638L10.23 5.29a.75.75 0 1 1 1.04-1.08l5.5 5.25a.75.75 0 0 1 0 1.08l-5.5 5.25a.75.75 0 1 1-1.04-1.08l4.158-3.96H3.75A.75.75 0 0 1 3 10z" clip-rule="evenodd"/>
+          </svg>
+        </button>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════════════════════════════════════
+         RESULTS SCREEN
+    ════════════════════════════════════════════════════════════════════════ -->
+    <section id="results-screen"
+             class="hidden bg-white/90 dark:bg-gray-900/90 backdrop-blur-md rounded-3xl shadow-2xl ring-1 ring-white/60 dark:ring-white/10 p-8 text-center transition-colors duration-300"
+             aria-label="Quiz results" aria-live="polite">
+
+      <!-- Animated score ring -->
+      <div class="relative inline-flex items-center justify-center mb-5" aria-hidden="true">
+        <svg class="w-32 h-32 -rotate-90" viewBox="0 0 120 120">
+          <!-- Track -->
+          <circle cx="60" cy="60" r="54" fill="none" class="stroke-gray-100 dark:stroke-gray-800" stroke-width="8"/>
+          <!-- Score ring -->
+          <circle id="score-ring" cx="60" cy="60" r="54" fill="none"
+                  stroke-width="8" stroke-linecap="round"
+                  stroke-dasharray="339.3" stroke-dashoffset="339.3"
+                  class="transition-none"/>
+        </svg>
+        <!-- Score count in centre -->
+        <div class="absolute inset-0 flex flex-col items-center justify-center rotate-0">
+          <span id="results-icon" class="text-2xl leading-none mb-0.5" aria-hidden="true">🎉</span>
+          <span id="score-text" class="text-3xl font-extrabold text-gray-900 dark:text-white tabular-nums leading-none" aria-live="polite" aria-atomic="true"></span>
+          <span class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">correct</span>
+        </div>
+      </div>
+
+      <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-1">Quiz Complete!</h2>
+      <p id="score-message" class="text-sm text-gray-500 dark:text-gray-400 mb-6"></p>
+
+      <!-- Stats grid -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6 text-left">
+        <!-- Correct -->
+        <div class="rounded-2xl bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-900 p-3">
+          <div class="text-xl font-bold text-green-600 dark:text-green-400 tabular-nums" id="stat-correct">—</div>
+          <div class="text-xs text-green-700/60 dark:text-green-500 font-medium mt-0.5">Correct</div>
+        </div>
+        <!-- Wrong -->
+        <div class="rounded-2xl bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900 p-3">
+          <div class="text-xl font-bold text-red-500 dark:text-red-400 tabular-nums" id="stat-wrong">—</div>
+          <div class="text-xs text-red-700/60 dark:text-red-500 font-medium mt-0.5">Wrong</div>
+        </div>
+        <!-- Best streak -->
+        <div class="rounded-2xl bg-orange-50 dark:bg-orange-900/20 border border-orange-100 dark:border-orange-900 p-3">
+          <div class="text-xl font-bold text-orange-500 dark:text-orange-400 tabular-nums flex items-center gap-1" id="stat-streak">
+            <span>—</span><span class="text-base" aria-hidden="true">🔥</span>
+          </div>
+          <div class="text-xs text-orange-700/60 dark:text-orange-500 font-medium mt-0.5">Best Streak</div>
+        </div>
+        <!-- Time -->
+        <div class="rounded-2xl bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900 p-3">
+          <div class="text-xl font-bold text-blue-600 dark:text-blue-400 tabular-nums font-mono" id="stat-time">—</div>
+          <div class="text-xs text-blue-700/60 dark:text-blue-500 font-medium mt-0.5">Time taken</div>
+        </div>
+      </div>
+
+      <!-- Type accuracy breakdown -->
+      <div id="type-breakdown" class="hidden mb-6 rounded-2xl border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 p-4 text-left">
+        <p class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-3">Accuracy by type</p>
+        <div class="space-y-2">
+          <div class="flex items-center gap-3">
+            <span class="text-xs font-medium text-blue-600 dark:text-blue-400 w-24 shrink-0">Fill-in-blank</span>
+            <div class="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+              <div id="fill-accuracy-bar" class="h-full bg-blue-500 rounded-full transition-all duration-700 ease-out" style="width:0%"></div>
+            </div>
+            <span id="fill-accuracy-text" class="text-xs font-mono text-gray-500 dark:text-gray-400 w-8 text-right">—</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="text-xs font-medium text-purple-600 dark:text-purple-400 w-24 shrink-0">True / False</span>
+            <div class="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+              <div id="tf-accuracy-bar" class="h-full bg-purple-500 rounded-full transition-all duration-700 ease-out" style="width:0%"></div>
+            </div>
+            <span id="tf-accuracy-text" class="text-xs font-mono text-gray-500 dark:text-gray-400 w-8 text-right">—</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Weak spots panel (study mode only) -->
+      <div id="weak-spots" class="hidden mb-6 rounded-2xl border border-amber-200 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-900/20 p-4 text-left">
+        <p class="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wide mb-3">📌 Concepts to review</p>
+        <ul id="weak-spots-list" class="space-y-1.5 text-sm text-amber-900 dark:text-amber-200"></ul>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="flex flex-col sm:flex-row gap-2.5 justify-center mb-3 flex-wrap">
+        <button id="retry-bookmarked-btn"
+                class="hidden inline-flex items-center justify-center gap-2 rounded-xl bg-amber-50 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700/60 px-5 py-2.5 text-sm font-semibold text-amber-800 dark:text-amber-200 shadow-sm transition-all hover:bg-amber-100 dark:hover:bg-amber-900/50 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-amber-400 active:translate-y-0"
+                type="button">
+          <span class="text-amber-500">⭐</span>
+          <span>Review Bookmarked (<span id="bookmarked-count-badge">0</span>)</span>
+        </button>
+        <button id="retry-btn"
+                class="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-blue-500/20 transition-all hover:from-blue-700 hover:to-indigo-700 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 active:translate-y-0"
+                type="button">
+          <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M15.312 11.424a5.5 5.5 0 0 1-9.201 2.466l-.312-.311h2.433a.75.75 0 0 0 0-1.5H3.989a.75.75 0 0 0-.75.75v4.242a.75.75 0 0 0 1.5 0v-2.43l.31.31a7 7 0 0 0 11.712-3.138.75.75 0 0 0-1.449-.39zm1.23-3.723a.75.75 0 0 0 .219-.53V2.929a.75.75 0 0 0-1.5 0v2.43l-.31-.31A7 7 0 0 0 3.239 8.188a.75.75 0 1 0 1.448.389A5.5 5.5 0 0 1 13.89 6.11l.311.31h-2.432a.75.75 0 0 0 0 1.5h4.243a.75.75 0 0 0 .53-.219z" clip-rule="evenodd"/></svg>
+          Retry All
+        </button>
+        <button id="regen-btn"
+                class="inline-flex items-center justify-center gap-2 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-5 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-200 shadow-sm transition-all hover:bg-gray-50 dark:hover:bg-gray-700 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 active:translate-y-0"
+                type="button">
+          <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M5.433 13.917l1.262-3.155A4 4 0 0 1 7.58 9.42l6.92-6.918a2.121 2.121 0 0 1 3 3l-6.92 6.918c-.383.383-.84.685-1.343.886l-3.154 1.262a.5.5 0 0 1-.65-.65z"/><path d="M3.5 5.75c0-.69.56-1.25 1.25-1.25H10A.75.75 0 0 0 10 3H4.75A2.75 2.75 0 0 0 2 5.75v9.5A2.75 2.75 0 0 0 4.75 18h9.5A2.75 2.75 0 0 0 17 15.25V10a.75.75 0 0 0-1.5 0v5.25c0 .69-.56 1.25-1.25 1.25h-9.5c-.69 0-1.25-.56-1.25-1.25v-9.5z"/></svg>
+          New Questions
+        </button>
+        <button id="new-pdf-btn"
+                class="inline-flex items-center justify-center gap-2 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-5 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-200 shadow-sm transition-all hover:bg-gray-50 dark:hover:bg-gray-700 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 active:translate-y-0"
+                type="button">
+          <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M9.25 13.25a.75.75 0 0 0 1.5 0V4.636l2.955 3.129a.75.75 0 0 0 1.09-1.03l-4.25-4.5a.75.75 0 0 0-1.09 0l-4.25 4.5a.75.75 0 1 0 1.09 1.03L9.25 4.636v8.614z"/><path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5z"/></svg>
+          New PDF
+        </button>
+        <button id="copy-results-btn"
+                class="inline-flex items-center justify-center gap-2 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 px-5 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-200 shadow-sm transition-all hover:bg-gray-50 dark:hover:bg-gray-700 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 active:translate-y-0"
+                type="button" aria-label="Copy results to clipboard">
+          <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M7 3.5A1.5 1.5 0 0 1 8.5 2h3.879a1.5 1.5 0 0 1 1.06.44l3.122 3.12A1.5 1.5 0 0 1 17 6.622V12.5a1.5 1.5 0 0 1-1.5 1.5h-1v-3.379a3 3 0 0 0-.879-2.121L10.5 5.379A3 3 0 0 0 8.379 4.5H7v-1z"/><path d="M4.5 6A1.5 1.5 0 0 0 3 7.5v9A1.5 1.5 0 0 0 4.5 18h7a1.5 1.5 0 0 0 1.5-1.5v-5.879a1.5 1.5 0 0 0-.44-1.06L9.44 6.439A1.5 1.5 0 0 0 8.378 6H4.5z"/></svg>
+          Share
+        </button>
+      </div>
+
+      <!-- Export decks row -->
+      <div class="flex items-center justify-center gap-2 mb-5 flex-wrap" role="group" aria-label="Export options">
+        <button id="export-anki-btn"
+                class="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3.5 py-2 text-xs font-semibold text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700/80 transition-all hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                type="button" title="Export flashcard deck as Anki TSV file">
+          <svg class="w-3.5 h-3.5 text-blue-500" viewBox="0 0 20 20" fill="currentColor"><path d="M10.75 2.75a.75.75 0 0 0-1.5 0v8.614L6.295 8.235a.75.75 0 1 0-1.09 1.03l4.25 4.5a.75.75 0 0 0 1.09 0l4.25-4.5a.75.75 0 0 0-1.09-1.03l-2.955 3.129V2.75z"/><path d="M3.5 12.75a.75.75 0 0 0-1.5 0v2.5A2.75 2.75 0 0 0 4.75 18h10.5A2.75 2.75 0 0 0 18 15.25v-2.5a.75.75 0 0 0-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5z"/></svg>
+          Export Anki (.tsv)
+        </button>
+        <button id="export-json-btn"
+                class="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3.5 py-2 text-xs font-semibold text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700/80 transition-all hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                type="button" title="Export questions as JSON">
+          <svg class="w-3.5 h-3.5 text-purple-500" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4.5 2A1.5 1.5 0 0 0 3 3.5v13A1.5 1.5 0 0 0 4.5 18h11a1.5 1.5 0 0 0 1.5-1.5V7.621a1.5 1.5 0 0 0-.44-1.06l-4.12-4.122A1.5 1.5 0 0 0 11.378 2H4.5zm2.25 8.5a.75.75 0 0 0 0 1.5h6.5a.75.75 0 0 0 0-1.5h-6.5zm0 3a.75.75 0 0 0 0 1.5h6.5a.75.75 0 0 0 0-1.5h-6.5z" clip-rule="evenodd"/></svg>
+          Export JSON
+        </button>
+        <button id="print-worksheet-btn"
+                class="inline-flex items-center gap-1.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3.5 py-2 text-xs font-semibold text-gray-700 dark:text-gray-300 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700/80 transition-all hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                type="button" title="Print as paper exam worksheet with answer key">
+          <svg class="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 2.75C5 1.784 5.784 1 6.75 1h6.5c.966 0 1.75.784 1.75 1.75v3.5A1.75 1.75 0 0 1 13.25 8H6.75A1.75 1.75 0 0 1 5 6.25v-3.5zm1.75-.25a.25.25 0 0 0-.25.25v3.5c0 .138.112.25.25.25h6.5a.25.25 0 0 0 .25-.25v-3.5a.25.25 0 0 0-.25-.25h-6.5zM3.75 9A1.75 1.75 0 0 0 2 10.75v4.5c0 .966.784 1.75 1.75 1.75h.5V14a2 2 0 0 1 2-2h7.5a2 2 0 0 1 2 2v3h.5a1.75 1.75 0 0 0 1.75-1.75v-4.5A1.75 1.75 0 0 0 16.25 9H3.75zM6 14v4.5a.5.5 0 0 0 .5.5h7a.5.5 0 0 0 .5-.5V14a.5.5 0 0 0-.5-.5h-7A.5.5 0 0 0 6 14z" clip-rule="evenodd"/></svg>
+          Print Worksheet
+        </button>
+      </div>
+
+      <!-- Answer review -->
+      <button id="review-toggle-btn"
+              class="inline-flex items-center gap-1.5 text-sm text-blue-600 dark:text-blue-400 font-medium hover:text-blue-700 dark:hover:text-blue-300 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg px-2 py-1 transition-colors"
+              type="button" aria-expanded="false" aria-controls="review-panel">
+        <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <path d="M10 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z"/>
+          <path fill-rule="evenodd" d="M.664 10.59a1.651 1.651 0 0 1 0-1.186A10.004 10.004 0 0 1 10 3c4.257 0 7.893 2.66 9.336 6.41.147.381.146.804 0 1.186A10.004 10.004 0 0 1 10 17c-4.257 0-7.893-2.66-9.336-6.41zM14 10a4 4 0 1 1-8 0 4 4 0 0 1 8 0z" clip-rule="evenodd"/>
+        </svg>
+        Review answers
+      </button>
+      <div id="review-panel" class="hidden mt-4 text-left space-y-3" role="region" aria-label="Answer review"></div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="mt-5 text-center text-xs text-gray-400/70 dark:text-gray-600 no-print">
+      Your PDF never leaves your device ·
+      <a href="https://github.com/mozilla/pdf.js" class="underline underline-offset-2 hover:text-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-400 rounded" target="_blank" rel="noopener noreferrer">Powered by PDF.js</a>
+    </footer>
+  </main>
+
+  <!-- Printable Paper Exam Worksheet (hidden on screen, visible in print) -->
+  <div id="printable-worksheet" class="hidden text-black bg-white" aria-hidden="true"></div>
+
+  <script src="app.js" defer></script>
+</body>
+</html>

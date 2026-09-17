@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'none';
+    script-src 'self' 'unsafe-inline';
+    style-src 'self' 'unsafe-inline';
+    img-src 'self';
+    base-uri 'none';
+    form-action 'none';
+    frame-ancestors 'none';
+    upgrade-insecure-requests
+  ">
+  <title>Page Not Found — PDF Quiz Maker</title>
+  <meta name="robots" content="noindex">
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      background: #f0f4ff;
+      color: #1e293b;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      margin: 0;
+      text-align: center;
+      padding: 1rem;
+    }
+    h1 { font-size: 2rem; margin-bottom: 0.5rem; }
+    p  { color: #64748b; margin-bottom: 1.5rem; }
+    a  {
+      display: inline-block;
+      background: #1d4ed8;
+      color: white;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.5rem;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    a:hover { background: #1e40af; }
+  </style>
+  <!-- GitHub Pages SPA redirect: push state so the app can handle routing -->
+  <script>
+    // Redirect 404s back to the root app (GitHub Pages SPA pattern)
+    var path = window.location.pathname;
+    var query = window.location.search;
+    var hash = window.location.hash;
+    window.location.replace(
+      window.location.origin + '/' +
+      path.replace(/^\/[^/]*\//, '') + query + hash
+    );
+  </script>
+</head>
+<body>
+  <div style="font-size:4rem;margin-bottom:1rem">📄</div>
+  <h1>404 — Page Not Found</h1>
+  <p>The page you're looking for doesn't exist. Redirecting you to the app…</p>
+  <a href="./">Go to PDF Quiz Maker</a>
+</body>
+</html>

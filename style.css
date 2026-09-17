@@ -1,0 +1,100 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: system-ui, sans-serif;
+  background: #f0f2f5;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 1rem;
+  color: #1a1a1a;
+}
+.card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  padding: 2rem;
+  max-width: 560px;
+  width: 100%;
+}
+h1 { font-size: 1.4rem; margin-bottom: 1rem; }
+.drop-zone {
+  border: 2px dashed #999;
+  border-radius: 10px;
+  padding: 2rem;
+  text-align: center;
+  color: #4b5563;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+  margin-bottom: 1rem;
+}
+.drop-zone:hover, .drop-zone.dragover, .drop-zone:focus-visible {
+  border-color: #1a56db;
+  background: #f4f9ff;
+}
+.file-info { font-size: .9rem; color: #262626; margin-bottom: 1rem; }
+.row { display: flex; align-items: center; gap: .5rem; margin-bottom: 1rem; }
+select {
+  padding: .4rem;
+  border-radius: 6px;
+  border: 1px solid #999;
+  font-size: 1rem;
+  color: #1a1a1a;
+  background: #fff;
+}
+.status { font-size: .9rem; color: #4b5563; margin-top: .75rem; min-height: 1.2em; }
+.status.error { color: #b91c1c; font-weight: 600; }
+.progress { color: #4b5563; font-size: .85rem; margin-bottom: .5rem; }
+.question { font-size: 1.05rem; line-height: 1.5; margin-bottom: 1rem; white-space: pre-line; }
+.option {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: .75rem 1rem;
+  margin: .5rem 0;
+  border: 2px solid #ccc;
+  border-radius: 8px;
+  background: #fff;
+  color: #1a1a1a;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: border-color .15s;
+}
+.option:hover { border-color: #1a56db; }
+.option.correct { border-color: #15803d; background: #eafaf1; }
+.option.wrong { border-color: #b91c1c; background: #fdedec; }
+.option:disabled { cursor: default; }
+.btn {
+  padding: .75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  background: #1a56db;
+  color: #fff;
+  font-size: 1rem;
+  cursor: pointer;
+  margin-top: 1rem;
+  margin-right: .5rem;
+}
+.btn:hover { background: #1543ad; }
+.btn:disabled { background: #93a9d6; cursor: default; }
+.btn.secondary { background: #4b5563; }
+.btn.secondary:hover { background: #374151; }
+.hidden { display: none; }
+.score { font-size: 2.5rem; text-align: center; margin: 1rem 0; }
+.center { text-align: center; }
+
+/* Visible focus ring everywhere for keyboard users */
+a:focus-visible, button:focus-visible, select:focus-visible, [tabindex]:focus-visible {
+  outline: 3px solid #1a56db;
+  outline-offset: 2px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border: 0;
+}
